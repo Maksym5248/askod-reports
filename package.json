@@ -1,0 +1,46 @@
+{
+  "name": "askod-reports",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=24.15.0 <25"
+  },
+  "scripts": {
+    "dev": "npm run db:generate && npm run dev -w @askod/desktop",
+    "dev:api": "npm run db:generate && tsx apps/api/src/main.ts",
+    "build": "npm run db:generate && npm run typecheck && npm run build -w @askod/desktop && tsup --config tsup.config.ts",
+    "preview": "npm run preview -w @askod/desktop",
+    "start:api": "node apps/api/dist/main.js",
+    "db:generate": "prisma generate --schema packages/infrastructure/prisma/schema.prisma",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "postinstall": "node node_modules/electron/install.js",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test:desktop": "tsx scripts/smoke-desktop.ts"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.0",
+    "@types/node": "^22.10.0",
+    "@types/react": "^19.0.0",
+    "@types/react-dom": "^19.0.0",
+    "@types/supertest": "^6.0.0",
+    "@vitejs/plugin-react": "^5.2.0",
+    "electron": "^44.3.0",
+    "electron-vite": "^5.0.0",
+    "playwright-core": "^1.63.0",
+    "prettier": "^3.9.6",
+    "prisma": "^6.19.0",
+    "supertest": "^7.0.0",
+    "tsup": "^8.3.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.7.3",
+    "vite": "^7.3.6",
+    "vitest": "^4.1.11"
+  }
+}
