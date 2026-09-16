@@ -61,7 +61,9 @@ test('selection is limited to the current page and clears on pagination', async 
     window.getByText('Вибрано: 25 (поточна сторінка)', { exact: true }),
   ).toBeVisible();
   await window.getByRole('button', { name: 'Далі', exact: true }).click();
-  await expect(window.getByText('Сторінка 2', { exact: true })).toBeVisible();
+  await expect(
+    window.getByRole('button', { name: 'Сторінка 2', exact: true }),
+  ).toHaveAttribute('aria-current', 'page');
   await expect(
     window.getByText('Вибрано: 0 (поточна сторінка)', { exact: true }),
   ).toBeVisible();

@@ -1,0 +1,18 @@
+.documentsMain {
+  height: 100dvh;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.documentsContent {
+  flex: 1;
+  min-height: 0;
+  min-width: 0;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.documentsContent > * {
+  flex-shrink: 0;
+}

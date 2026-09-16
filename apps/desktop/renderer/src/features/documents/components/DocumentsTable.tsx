@@ -173,7 +173,7 @@ export function DocumentsTable({
       : {};
   }
   return (
-    <Stack gap="sm">
+    <Stack gap="sm" className={styles.workspace}>
       <Group justify="space-between">
         <Group>
           <Text size="sm">Вибрано: {selected.length} (поточна сторінка)</Text>
@@ -193,7 +193,11 @@ export function DocumentsTable({
           Колонки
         </Button>
       </Group>
-      <div className={styles.viewport}>
+      <div
+        className={styles.viewport}
+        role="region"
+        aria-label="Таблиця документів"
+      >
         <table
           className={`${styles.table} ${compact ? styles.compact : ''}`}
           style={{ width: table.getTotalSize() }}

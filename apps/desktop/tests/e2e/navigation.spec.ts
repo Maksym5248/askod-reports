@@ -42,11 +42,15 @@ test('paginates real documents and retains page 2 after reload', async ({
   );
   await openDocuments(window, 26);
   await expect(window.locator('tbody tr')).toHaveCount(25);
-  await window.getByRole('button', { name: 'Далі', exact: true }).click();
-  await expect(window.getByText('Сторінка 2', { exact: true })).toBeVisible();
+  await window.getByRole('button', { name: 'Сторінка 2', exact: true }).click();
+  await expect(
+    window.getByRole('button', { name: 'Сторінка 2', exact: true }),
+  ).toHaveAttribute('aria-current', 'page');
   await expect(window.locator('tbody tr')).toHaveCount(1);
   await window.reload();
-  await expect(window.getByText('Сторінка 2', { exact: true })).toBeVisible();
+  await expect(
+    window.getByRole('button', { name: 'Сторінка 2', exact: true }),
+  ).toHaveAttribute('aria-current', 'page');
   await expect(window.locator('tbody tr')).toHaveCount(1);
   await expect(
     window.getByRole('button', { name: 'Далі', exact: true }),

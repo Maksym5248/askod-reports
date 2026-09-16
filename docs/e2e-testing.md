@@ -15,7 +15,7 @@
 ```sh
 npm run build                 # потрібна актуальна збірка Electron/backend/renderer
 npm run test:desktop          # тільки короткий smoke
-npm run test:e2e              # усі 15 E2E-сценаріїв, включно зі smoke
+npm run test:e2e              # усі 16 E2E-сценаріїв, включно зі smoke
 npm run test:e2e -- documents.spec.ts
 npm run test:e2e -- --grep "does not overwrite"
 npm run test:e2e:report       # HTML-звіт останнього запуску
@@ -36,6 +36,7 @@ apps/desktop/
     fixtures/desktop.ts       запуск, ізоляція, діагностика, очищення
     helpers/journal.ts        синтетичні XLSX, підготовка через HTTP, UI helpers
     smoke.spec.ts
+    layout.spec.ts
     navigation.spec.ts
     imports.spec.ts
     documents.spec.ts
@@ -62,6 +63,10 @@ apps/desktop/
 | deletion          | Межі вибору                       | «Вибрати сторінку» обирає 25 рядків; перехід на іншу сторінку скидає вибір                                          |
 | table-preferences | Компактність                      | Налаштування зберігається після reload                                                                              |
 | table-preferences | Порядок/видимість/reset           | Перестановка й приховування переживають reload; reset відновлює початкові колонки                                   |
+
+Сценарій `layout.spec.ts` перевіряє вікна 960×640 і 1600×1000: таблиця займає
+вільний простір, має внутрішню прокрутку, документ сторінки не прокручується,
+пагінація залишається видимою. Використовуються 25 синтетичних довгих документів.
 
 ## Ізоляція та підготовка даних
 

@@ -9,14 +9,16 @@ import {
 } from '@mantine/core';
 import { Link, Outlet, useLocation } from 'react-router-dom';
 import { useIsMutating } from '@tanstack/react-query';
+import styles from './AppLayout.module.css';
 export function AppLayout() {
   const { pathname } = useLocation();
+  const documents = pathname === '/documents';
   const importing = useIsMutating({ mutationKey: ['imports', 'create'] }) > 0;
   return (
     <AppShell
       header={{ height: 64 }}
       navbar={{ width: 230, breakpoint: 0 }}
-      padding="xl"
+      padding={documents ? 'md' : 'xl'}
     >
       <AppShell.Header>
         <Group h="100%" px="xl" justify="space-between">
@@ -54,8 +56,13 @@ export function AppLayout() {
           Дані для ваших майбутніх звітів
         </Text>
       </AppShell.Navbar>
-      <AppShell.Main>
-        <Container size="xl" px={0}>
+      <AppShell.Main className={documents ? styles.documentsMain : undefined}>
+        <Container
+          size="xl"
+          fluid={documents}
+          px={0}
+          className={documents ? styles.documentsContent : undefined}
+        >
           {importing && (
             <Alert mb="lg" role="status">
               Імпорт триває. Дочекайтеся завершення перед закриттям застосунку.
