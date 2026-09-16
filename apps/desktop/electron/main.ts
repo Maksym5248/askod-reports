@@ -3,10 +3,10 @@ import { randomBytes } from 'node:crypto';
 import { mkdir } from 'node:fs/promises';
 import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { startApi } from '@askod/api';
+import { startBackend } from '@askod/backend';
 
 const here = dirname(fileURLToPath(import.meta.url));
-let api: Awaited<ReturnType<typeof startApi>> | undefined;
+let api: Awaited<ReturnType<typeof startBackend>> | undefined;
 let window: BrowserWindow | undefined;
 let closing = false;
 const token = randomBytes(32).toString('hex');
@@ -45,11 +45,11 @@ else {
     .then(async () => {
       const directory = app.getPath('userData');
       await mkdir(directory, { recursive: true });
-      api = await startApi({
+      api = await startBackend({
         databaseUrl: `file:${resolve(directory, 'askod.db')}`,
         schemaPath: resolve(
           app.getAppPath(),
-          '../../packages/infrastructure/prisma/schema.prisma',
+          '../../apps/backend/prisma/schema.prisma',
         ),
         token,
         allowedOrigin: devUrl ? new URL(devUrl).origin : 'null',

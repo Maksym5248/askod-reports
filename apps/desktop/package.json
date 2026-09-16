@@ -10,9 +10,9 @@
     "preview": "electron-vite preview"
   },
   "dependencies": {
-    "@askod/api": "*",
     "@askod/shared": "*",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@askod/backend": "*"
   }
 }

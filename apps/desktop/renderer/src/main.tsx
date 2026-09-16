@@ -1,23 +1,75 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { createRoot } from 'react-dom/client';
-import { getWorkspaceStatus } from './api';
+import type { DocumentsDto, ImportSummaryDto } from '@askod/shared';
+import { ApiError, getDocuments, getImports, importJournal } from './api';
 import './styles.css';
 
 function App() {
-  const [count, setCount] = useState<number>();
-  const [failed, setFailed] = useState(false);
-  const [attempt, setAttempt] = useState(0);
+  const [documents, setDocuments] = useState<DocumentsDto>();
+  const [imports, setImports] = useState<ImportSummaryDto[]>([]);
+  const [page, setPage] = useState(1);
+  const [revision, setRevision] = useState(0);
+  const [loadError, setLoadError] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [file, setFile] = useState<File>();
+  const [busy, setBusy] = useState(false);
+  const [result, setResult] = useState<ImportSummaryDto>();
+  const [error, setError] = useState<ApiError>();
+  const fileInput = useRef<HTMLInputElement>(null);
   useEffect(() => {
     const controller = new AbortController();
-    setFailed(false);
-    setCount(undefined);
-    getWorkspaceStatus(controller.signal)
-      .then((data) => setCount(data.documentCount))
+    setLoadError(false);
+    setLoading(true);
+    Promise.all([
+      getDocuments(page, controller.signal),
+      getImports(controller.signal),
+    ])
+      .then(([data, history]) => {
+        if (!controller.signal.aborted) {
+          setDocuments(data);
+          setImports(history);
+        }
+      })
       .catch(() => {
-        if (!controller.signal.aborted) setFailed(true);
+        if (!controller.signal.aborted) setLoadError(true);
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setLoading(false);
       });
     return () => controller.abort();
-  }, [attempt]);
+  }, [page, revision]);
+  async function upload() {
+    if (!file || busy) return;
+    setError(undefined);
+    setResult(undefined);
+    if (
+      !/\.xlsx$/i.test(file.name) ||
+      file.size === 0 ||
+      file.size > 10 * 1024 * 1024
+    ) {
+      setError(
+        new ApiError('Оберіть непорожній файл .xlsx розміром до 10 МБ.'),
+      );
+      return;
+    }
+    setBusy(true);
+    try {
+      const imported = await importJournal(file);
+      setResult(imported);
+      setFile(undefined);
+      if (fileInput.current) fileInput.current.value = '';
+      setPage(1);
+      setRevision((value) => value + 1);
+    } catch (caught) {
+      setError(
+        caught instanceof ApiError
+          ? caught
+          : new ApiError('Не вдалося імпортувати файл.'),
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
   return (
     <div className="shell">
       <aside>
@@ -26,83 +78,229 @@ function App() {
         </div>
         <div className="section">РОБОЧИЙ ПРОСТІР</div>
         <nav aria-label="Головна навігація">
-          <a href="#" aria-current="page">
-            Огляд
+          <a href="#documents" aria-current="page">
+            Документи
           </a>
+          <a href="#imports">Історія імпортів</a>
         </nav>
         <p className="aside-note">
           Локальний робочий простір
           <br />
-          Версія 0.1 · Початковий запуск
+          Версія 0.2 · Імпорт журналу
         </p>
       </aside>
       <main>
         <header>
-          <span>Робочий простір / Огляд</span>
+          <span>Робочий простір / Документи</span>
           <span className="badge">На цьому пристрої</span>
         </header>
         <div className="content">
-          <p className="eyebrow">ОГЛЯД</p>
-          <h1>Ваші дані. Зрозумілі звіти.</h1>
+          <p className="eyebrow">ЖУРНАЛ АСКОД</p>
+          <h1>Документи у вашому сховищі</h1>
           <p className="lead">
-            Робочий простір для документів, експортованих з АСКОД.
+            Імпортуйте журнал Excel, щоб зберегти дані для подальшої роботи та
+            звітів.
           </p>
+          <section className="import-panel" aria-labelledby="import-title">
+            <div>
+              <h2 id="import-title">Імпорт з Excel</h2>
+              <p>
+                Оберіть експорт журналу АСКОД (.xlsx, до 10 МБ). Повторний
+                імпорт оновить документи зі збереженням історії.
+              </p>
+            </div>
+            <div className="upload-controls">
+              <input
+                className="visually-hidden"
+                aria-label="Файл журналу АСКОД"
+                ref={fileInput}
+                type="file"
+                accept=".xlsx"
+                disabled={busy}
+                onChange={(event) => {
+                  setFile(event.target.files?.[0]);
+                  setError(undefined);
+                  setResult(undefined);
+                }}
+              />
+              <button
+                disabled={busy}
+                onClick={() => fileInput.current?.click()}
+              >
+                Обрати Excel-файл
+              </button>
+              <span className="file-name">
+                {file?.name ?? 'Файл не обрано'}
+              </span>
+              <button
+                className="primary"
+                disabled={!file || busy}
+                onClick={() => void upload()}
+              >
+                {busy ? 'Перевірка та збереження…' : 'Імпортувати в базу'}
+              </button>
+            </div>
+            <div aria-live="polite">
+              {result && (
+                <p className="success">
+                  Імпорт завершено: додано {result.created}, оновлено{' '}
+                  {result.updated}, без змін {result.unchanged}. Усього рядків:{' '}
+                  {result.totalRows}.
+                </p>
+              )}
+            </div>
+            {error && (
+              <div role="alert" className="import-error">
+                <p>{error.message}</p>
+                {error.issues.length > 0 && (
+                  <ul>
+                    {error.issues.map((issue, index) => (
+                      <li key={index}>
+                        Рядок {issue.row}
+                        {issue.field ? `, ${issue.field}` : ''}: {issue.message}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </section>
           <section className="status" aria-live="polite">
             <span
-              className={`dot ${failed ? 'error' : count === undefined ? 'pending' : ''}`}
+              className={`dot ${loadError ? 'error' : loading ? 'pending' : ''}`}
             />
             <div>
               <h2>
-                {failed
-                  ? 'Немає з’єднання'
-                  : count === undefined
-                    ? 'Підключення до сховища…'
+                {loadError
+                  ? 'Не вдалося оновити список'
+                  : loading
+                    ? 'Завантаження документів…'
                     : 'Робочий простір готовий'}
               </h2>
               <p>
-                {failed
-                  ? 'Не вдалося отримати дані. Перевірте підключення та повторіть спробу.'
-                  : count === undefined
-                    ? 'Перевіряємо доступність ваших даних.'
-                    : `Документів у сховищі: ${count}.`}
+                {loadError
+                  ? 'Спробуйте завантажити дані повторно.'
+                  : `Документів у сховищі: ${documents?.total ?? '…'}.`}
               </p>
             </div>
-            {failed && (
-              <button onClick={() => setAttempt((n) => n + 1)}>
+            {loadError && (
+              <button onClick={() => setRevision((value) => value + 1)}>
                 Спробувати ще раз
               </button>
             )}
           </section>
-          <h2 className="next-title">Наступні можливості</h2>
-          <div className="cards">
-            {[
-              [
-                '01',
-                'Імпорт з Excel',
-                'Завантажуйте експорт АСКОД для перевірки й збереження документів.',
-              ],
-              [
-                '02',
-                'Перегляд документів',
-                'Знаходьте потрібні документи за допомогою пошуку та фільтрів.',
-              ],
-              [
-                '03',
-                'Готові звіти',
-                'Формуйте визначені звіти та експортуйте результати в Excel.',
-              ],
-            ].map(([number, title, description]) => (
-              <article key={number}>
-                <span className="number">{number}</span>
-                <h3>{title}</h3>
-                <p>{description}</p>
-                <span className="soon">Заплановано</span>
-              </article>
-            ))}
-          </div>
+          <section id="documents">
+            <div className="section-heading">
+              <h2>Документи</h2>
+              <span>Сторінка {page}</span>
+            </div>
+            {documents && !loading && !loadError && (
+              <>
+                <div className="table-scroll">
+                  <table>
+                    <thead>
+                      <tr>
+                        <th>№ документа</th>
+                        <th>Дата</th>
+                        <th>Зміст / вид</th>
+                        <th>Заявник</th>
+                        <th>Головний виконавець</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {documents.items.map((document) => (
+                        <tr key={document.id}>
+                          <td className="nowrap">
+                            {document.registrationNumber}
+                          </td>
+                          <td className="nowrap">
+                            {document.registeredAt
+                              .split('-')
+                              .reverse()
+                              .join('.')}
+                          </td>
+                          <td className="document-title">
+                            <div>{document.title}</div>
+                            <small>{document.documentType ?? '—'}</small>
+                          </td>
+                          <td>{document.applicant ?? '—'}</td>
+                          <td>{document.chiefExecutor ?? '—'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {documents.total === 0 && (
+                    <p className="empty">
+                      Документів ще немає. Імпортуйте перший журнал вище.
+                    </p>
+                  )}
+                </div>
+                <div className="pagination">
+                  <button
+                    disabled={page === 1}
+                    onClick={() => setPage((value) => value - 1)}
+                  >
+                    Назад
+                  </button>
+                  <span>
+                    {documents.total === 0
+                      ? '0'
+                      : `${(page - 1) * 25 + 1}–${Math.min(page * 25, documents.total)}`}{' '}
+                    з {documents.total}
+                  </span>
+                  <button
+                    disabled={page * 25 >= documents.total}
+                    onClick={() => setPage((value) => value + 1)}
+                  >
+                    Далі
+                  </button>
+                </div>
+              </>
+            )}
+          </section>
+          <section id="imports">
+            <div className="section-heading">
+              <h2>Історія імпортів</h2>
+              <span>Останні 20 завантажень</span>
+            </div>
+            <div className="table-scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Файл / дата</th>
+                    <th>Рядків</th>
+                    <th>Додано</th>
+                    <th>Оновлено</th>
+                    <th>Без змін</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {imports.map((item) => (
+                    <tr key={item.id}>
+                      <td>
+                        {item.fileName}
+                        <small>
+                          {new Date(item.importedAt).toLocaleString('uk-UA')}
+                        </small>
+                      </td>
+                      <td>{item.totalRows}</td>
+                      <td>{item.created}</td>
+                      <td>{item.updated}</td>
+                      <td>{item.unchanged}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {imports.length === 0 && (
+                <p className="empty">
+                  Історія з’явиться після першого успішного імпорту.
+                </p>
+              )}
+            </div>
+          </section>
           <footer>
-            Це базова версія застосунку. Імпорт і формування звітів будуть
-            доступні в наступних оновленнях.
+            Збережено всі поля журналу. Формування та експорт звітів — наступний
+            етап.
           </footer>
         </div>
       </main>

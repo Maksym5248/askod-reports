@@ -1,0 +1,93 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id                 String   @id @default(uuid())
+  registrationNumber String
+  registrationYear   Int
+  title              String
+  registeredAt       DateTime
+
+  contentHash            String?
+  imports                ImportRow[]
+  pageCount              Int?
+  attachments            String?
+  attachmentPageCount    Int?
+  controlRemovedAt       DateTime?
+  controlDeadline        DateTime?
+  extendedDeadline       String?
+  note                   String?
+  volume                 String?
+  applicant              String?
+  applicantCount         Int?
+  applicantAddress       String?
+  branch                 String?
+  documentType           String?
+  nomenclature           String?
+  control                String?
+  chiefExecutor          String?
+  controller             String?
+  route                  String?
+  status                 String?
+  cardAuthor             String?
+  multiplicity           String?
+  applicantType          String?
+  subjectType            String?
+  reviewer               String?
+  reviewResult           String?
+  reviewResultText       String?
+  territoryCode          String?
+  territory              String?
+  receivedVia            String?
+  executorDepartment     String?
+  registrationDepartment String?
+  folder                 String?
+  organization           String?
+  mobilePhone            String?
+  email                  String?
+  correspondent          String?
+  correspondentNumber    String?
+  correspondentDate      DateTime?
+  correspondentDeadline  DateTime?
+
+  @@unique([registrationNumber, registrationYear])
+  @@index([documentType])
+  @@index([registeredAt])
+  @@index([registrationNumber])
+}
+
+model Import {
+  id         String      @id @default(uuid())
+  fileName   String
+  fileHash   String
+  sheetName  String
+  importedAt DateTime    @default(now())
+  totalRows  Int
+  created    Int
+  updated    Int
+  unchanged  Int
+  rows       ImportRow[]
+
+  @@index([importedAt])
+}
+
+model ImportRow {
+  id         String   @id @default(uuid())
+  importId   String
+  documentId String
+  rowNumber  Int
+  outcome    String
+  raw        Json
+  snapshot   Json
+  import     Import   @relation(fields: [importId], references: [id], onDelete: Restrict)
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@unique([importId, rowNumber])
+  @@index([documentId])
+}

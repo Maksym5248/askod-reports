@@ -8,7 +8,7 @@ export default defineConfig({
       externalizeDeps: false,
       rollupOptions: {
         input: resolve('electron/main.ts'),
-        external: ['@prisma/client', 'express', 'zod'],
+        external: ['@prisma/client', 'express', 'zod', 'exceljs', 'yauzl'],
       },
     },
   },

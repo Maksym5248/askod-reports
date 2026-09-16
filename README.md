@@ -1,110 +1,85 @@
 # ASKOD Reports
 
-Перший етап: базовий запуск desktop-застосунку та перевірка архітектури.
+Desktop-застосунок для імпорту Excel-журналу АСКОД, збереження документів і підготовки
+даних для майбутніх звітів. Інтерфейс українською. Backend також запускається окремим HTTP-сервером.
 
-## Вибір boilerplate
+## Що вже працює
 
-Основа — [electron-vite](https://electron-vite.org/guide/) з React + TypeScript,
-адаптована вручну до npm workspaces. Electron main, preload та React збираються окремо.
-Немає Next.js. Використано electron-vite 5 / Vite 7 / Electron 44 / Prisma 6 на Node 24.
-Версії зафіксовано у package-lock.json. Prisma 6 використовує query engine без
-нативного SQLite Node adapter, який потребував би окремої перебудови для Electron ABI.
+- Імпорт `.xlsx`: усі 43 колонки наданого формату, перевірка заголовків і значень.
+- Збереження документів у SQLite через Prisma та історії кожного успішного імпорту.
+- Повторний імпорт оновлює документ за **номером + роком дати реєстрації**.
+- Перегляд документів із пагінацією та останніх 20 імпортів.
 
-## Запуск
+Пошук, детальна картка, звіти й Excel/PDF-експорт ще не реалізовані.
 
-Потрібні Node.js 24.15+ (24.x), npm 10+, desktop-середовище.
+## Швидкий старт
+
+Потрібні Node.js **24.15+ (24.x)**, npm та desktop-сесія для Electron.
+Версія Node зафіксована у `.node-version`, залежності — у `package-lock.json`.
 
 ```sh
 npm ci
 npm run dev
 ```
 
-Перший запуск генерує Prisma Client та застосовує committed migrations.
-Вікно показує реальну кількість документів із SQLite через HTTP API.
-Імпорт, фільтри й звіти ще не реалізовано; картки на екрані позначено як заплановані.
-ExcelJS додано лише як залежність infrastructure до погодження формату експорту АСКОД.
+`npm ci` генерує Prisma Client через `postinstall`; `dev` повторює генерацію.
+Під час кожного запуску backend застосовує незастосовані міграції.
+Оберіть журнал на екрані й натисніть **Імпортувати в базу**.
 
 ```sh
-npm run build
-npm run preview
-npm test
+npm run dev:backend       # тільки сервер, watch mode
+npm run build             # зібрати backend і desktop
+npm run start:backend     # зібраний сервер
+npm run preview           # зібраний desktop із checkout
+npm test                  # усі тести
 npm run typecheck
+npm run format:check
+npm run test:desktop      # GUI smoke test після build
 ```
 
-`build` збирає desktop та окремий Node API. `preview` запускає зібраний desktop
-із checkout. Інсталятор, підпис, автооновлення та пакування Prisma ще не налаштовані.
+Якщо середовище агента встановило `ELECTRON_RUN_AS_NODE=1`, для GUI на macOS/Linux:
+`env -u ELECTRON_RUN_AS_NODE npm run dev`.
 
-## Окремий API
-
-Запускати з кореня репозиторію:
-
-```sh
-npm run dev:api
-# або після build:
-npm run start:api
-curl http://127.0.0.1:4310/api/workspace
-```
-
-Змінні: `PORT` (4310), `DATABASE_URL` (file:<repo>/.data/askod.db),
-`API_TOKEN` (optional bearer token), `ALLOWED_ORIGIN` (точний origin web renderer).
-Standalone API слухає loopback; зовнішній deployment, TLS та автентифікація — окремий етап.
-Для браузерної розробки можна запустити Vite renderer із `VITE_API_URL` і дозволеним
-`ALLOWED_ORIGIN`; токен desktop ніколи не записується в build або localStorage.
-
-## Межі залежностей
+## Карта репозиторію
 
 ```text
-React ──HTTP──> Express ──> application ──> domain
-Electron ──> API bootstrap ──> infrastructure ──> application / domain
-React / Express ──> shared (HTTP DTO + Zod)
+apps/
+  backend/                 # сервер, бізнес-логіка, адаптери, Prisma й тести
+  desktop/                 # Electron та React renderer
+packages/
+  shared/                  # HTTP-контракти й Zod-схеми для backend та renderer
+scripts/
+  smoke-desktop.ts         # перевірка реального Electron-вікна
+docs/
+  architecture.md          # відповідальності та межі залежностей
+  development.md           # як змінювати й перевіряти проєкт
 ```
 
-- `domain`: незалежні моделі, без ORM/framework imports.
-- `application`: use cases та порти. `GetWorkspaceStatus` залежить від `DocumentRepository`.
-- `infrastructure`: реалізація repository через Prisma, з'єднання й міграції SQLite.
-- `shared`: HTTP contracts. Не контейнер для бізнес-логіки.
-- `api`: HTTP middleware, DTO mapping та композиція залежностей.
-- `desktop`: lifecycle, userData path, локальний API, ізольований preload, React UI.
+- [Архітектура](docs/architecture.md) — шари, процеси, шлях запиту, транзакції, модель даних і межі розвитку.
+- [Розробка](docs/development.md) — додавання можливостей, тести, зміни бази.
+- [Backend](apps/backend/README.md) — структура сервера, env і HTTP endpoints.
+- [Спільні контракти](packages/shared/README.md) — що дозволено спільному пакету.
 
-Renderer отримує через вузький preload лише адресу API й тимчасовий токен.
-Усі дані йдуть HTTP. Node integration вимкнено, context isolation і sandbox увімкнено.
-API використовує loopback, випадковий desktop-порт, перевірку origin і токен сесії.
-База desktop: `app.getPath('userData')/askod.db`; standalone: `.data/askod.db`.
+## Де зберігаються дані
 
-Міграції запускаються через стандартний `prisma migrate deploy`, не `db push`.
-Prisma CLI потрібен під час запуску цієї checkout-версії; production-пакування повинно
-включати CLI/engines/schema/migrations або окремо визначити deployment migration step.
+Desktop: `app.getPath('userData')/askod.db`. На macOS для поточного імені пакета:
+`~/Library/Application Support/@askod/desktop/askod.db`.
+Standalone backend: `<workspace>/.data/askod.db`, або шлях із `DATABASE_URL`.
+Це різні бази за замовчуванням. Перейменування сервера не змінює desktop userData.
 
-## Наступні етапи
+Вихідні Excel-файли не копіюються в репозиторій. У базі зберігаються значення рядків,
+нормалізовані знімки та SHA-256 файла. Тести використовують синтетичні дані.
 
-1. Отримати анонімізований ASKOD Excel, визначити колонки, типи, дати, дублікати.
-2. Додати порт джерела даних та ExcelJS adapter, validation preview і транзакційний import use case.
-3. Додати пагінацію/фільтри через repository та перший predefined report.
-4. Додати порт export з ExcelJS adapter; PDF стане іншою реалізацією.
-5. PostgreSQL: змінити Prisma provider, інфраструктурну конфігурацію та створити
-   відповідні міграції й перенесення даних. Domain/use cases залишаються незалежними.
-6. ASKOD REST API: новий adapter джерела; web: окремий bootstrap, auth та deployment.
+## Межі поточної версії
 
-`Import` і `Report` навмисно не деталізовано до визначення поведінки й формату даних.
-Початкова модель Document попередня, не претендує на відповідність реальному ASKOD export.
+`build` і `preview` працюють із checkout монорепозиторію. Інсталятори, підпис,
+автооновлення й самодостатній deployment image ще не налаштовані. Для розгортання
+потрібно включити Prisma CLI/engines, schema та migrations.
 
-## Перевірки
+Майбутній PostgreSQL потребуватиме іншого provider, міграцій і перенесення даних;
+бізнес-сценарії залишаються незалежними від бази. Автентифікація користувачів,
+TLS та конкурентні імпорти кількох серверних процесів — окремі етапи.
 
-Vitest перевіряє use case, HTTP contract, desktop authorization/origin,
-приховування внутрішніх помилок, міграцію нової SQLite бази й дані після рестарту API.
-
-## Додаткові перевірки та обмеження
-
-`npm run test:desktop` після build відкриває реальне Electron-вікно, перевіряє
-готовність сховища та ізоляцію Node; знімок записується в `.data/desktop-smoke.png`.
-Потрібна GUI-сесія. Smoke test використовує звичайну локальну desktop-базу.
-`npm run format:check` перевіряє форматування; CI запускає build і Vitest.
-
-Якщо середовище агента встановлює `ELECTRON_RUN_AS_NODE=1`, для ручного GUI запуску
-в macOS/Linux використовуйте `env -u ELECTRON_RUN_AS_NODE npm run dev`.
-Для React Fast Refresh лише dev HTML дозволяє inline scripts; зібрана версія — ні.
-
-Поточний `npm audit` має 6 findings: Prisma CLI / deepmerge-ts (3 high),
-ExcelJS / uuid (2 moderate), esbuild у tsup (1 low). Автоматичні major overrides
-не застосовувалися. Перед production release потрібно оновити/перевірити ці залежності;
-імпорт зовнішніх файлів у цьому етапі ще не підключено.
+Відомі npm audit findings: Prisma CLI / deepmerge-ts, ExcelJS / uuid та esbuild
+у tsup. Перед production-релізом потрібно оновити й перевірити ці залежності;
+ліміти парсера не замінюють оновлення.

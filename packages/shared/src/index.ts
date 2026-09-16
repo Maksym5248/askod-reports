@@ -1,5 +1,4 @@
-import { z } from 'zod';
-export const workspaceStatusSchema = z.object({
-  documentCount: z.number().int().nonnegative(),
-});
-export type WorkspaceStatusDto = z.infer<typeof workspaceStatusSchema>;
+export * from './contracts/workspace';
+export * from './contracts/imports';
+export * from './contracts/documents';
+export * from './contracts/pagination';
