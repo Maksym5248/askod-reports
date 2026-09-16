@@ -1,0 +1,45 @@
+.viewport {
+  overflow: auto;
+  max-height: calc(100vh - 340px);
+  min-height: 200px;
+  border: 1px solid #dce3e5;
+  border-radius: 8px;
+  background: white;
+}
+.table {
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed;
+  font-size: 12px;
+}
+.table th,
+.table td {
+  padding: 10px;
+  border-right: 1px solid #e3e8e9;
+  border-bottom: 1px solid #e3e8e9;
+  vertical-align: top;
+  overflow-wrap: anywhere;
+  background: white;
+}
+.table th {
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  background: #edf4f2;
+  text-align: left;
+}
+.compact td {
+  padding: 5px 8px;
+}
+.resize {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 6px;
+  cursor: col-resize;
+  touch-action: none;
+}
+.resize:hover {
+  background: #12b886;
+}

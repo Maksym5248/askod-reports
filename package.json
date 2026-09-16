@@ -22,9 +22,12 @@
     "postinstall": "npm run db:generate && node node_modules/electron/install.js",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "test:desktop": "tsx scripts/smoke-desktop.ts"
+    "test:desktop": "playwright test --config apps/desktop/playwright.config.ts --grep @smoke",
+    "test:e2e": "playwright test --config apps/desktop/playwright.config.ts",
+    "test:e2e:report": "playwright show-report .data/e2e/report"
   },
   "devDependencies": {
+    "@playwright/test": "^1.63.0",
     "@types/express": "^5.0.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",

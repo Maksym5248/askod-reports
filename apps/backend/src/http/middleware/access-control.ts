@@ -15,7 +15,7 @@ export function accessControl(options: HttpOptions): RequestHandler {
         'Access-Control-Allow-Headers',
         'Authorization, Content-Type',
       );
-      res.setHeader('Access-Control-Allow-Methods', 'GET, POST');
+      res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH');
     }
     if (req.method === 'OPTIONS') {
       res.sendStatus(204);

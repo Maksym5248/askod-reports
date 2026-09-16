@@ -36,7 +36,7 @@ export async function connectDatabase(databaseUrl: string, schemaPath: string) {
     throw error;
   }
   const documents: DocumentRepository = {
-    count: () => client.document.count(),
+    count: () => client.document.count({ where: { deletedAt: null } }),
   };
   return {
     documents,

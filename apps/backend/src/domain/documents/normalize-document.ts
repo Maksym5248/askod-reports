@@ -1,3 +1,4 @@
+import { documentEnums, type DocumentEnumField } from './document-enums';
 import { documentFieldTypes } from './document-fields';
 import type { JournalDocument } from './document';
 import type { SourceRow } from '../imports/source-row';
@@ -13,7 +14,12 @@ export function normalizeDocument(row: SourceRow): JournalDocument {
     const text =
       value === null || value === undefined ? '' : String(value).trim();
     const invalid = (message: string) =>
-      issues.push({ row: row.rowNumber, field, message });
+      issues.push({
+        row: row.rowNumber,
+        field,
+        message,
+        value: value == null ? '' : String(value),
+      });
     if (!text) {
       if (type.startsWith('required')) invalid('Обов’язкове поле не заповнено');
       result[field] = null;
@@ -41,6 +47,18 @@ export function normalizeDocument(row: SourceRow): JournalDocument {
     } else {
       if (typeof value === 'boolean' || text.length > 32767)
         invalid('Некоректне текстове значення');
+      if (Object.hasOwn(documentEnums, field)) {
+        const allowed = documentEnums[field as DocumentEnumField];
+        if (!(allowed as readonly string[]).includes(text))
+          issues.push({
+            row: row.rowNumber,
+            field,
+            value: String(value),
+            message:
+              'Значення відсутнє в дозволеному переліку. Використайте точний текст одного з варіантів або зверніться для оновлення довідника.',
+            allowedValues: [...allowed],
+          });
+      }
       result[field] = text;
     }
   }

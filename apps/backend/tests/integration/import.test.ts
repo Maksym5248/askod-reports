@@ -1,3 +1,10 @@
+import {
+  documentsSchema,
+  documentSchema,
+  documentHistorySchema,
+  importErrorResponseSchema,
+} from '@askod/shared';
+import { documentEnums } from '../../src/domain/documents/document-enums';
 import { fileURLToPath } from 'node:url';
 import { beforeAll, afterAll, describe, expect, it } from 'vitest';
 import ExcelJS from 'exceljs';
@@ -38,7 +45,7 @@ async function workbook(
       registeredAt: new Date('2026-09-15T00:00:00Z'),
       title: 'Тестовий документ',
       organization: 'Тестова організація',
-      folder: 'Звернення',
+      folder: 'Звернення громадян',
       mobilePhone: '0012345678',
       pageCount: 0,
       ...row,
@@ -59,6 +66,24 @@ describe('Excel journal adapter', () => {
     expect(document.mobilePhone).toBe('0012345678');
     expect(document.pageCount).toBe(0);
     expect(document.applicantCount).toBeNull();
+  });
+  it('accepts every approved enum value and rejects different spelling', async () => {
+    for (const [field, values] of Object.entries(documentEnums)) {
+      for (const value of values) {
+        const parsed = await source.parse(await workbook([{ [field]: value }]));
+        expect(normalizeDocument(parsed.rows[0]!)).toHaveProperty(field, value);
+      }
+      const parsed = await source.parse(
+        await workbook([{ [field]: 'НЕВІДОМЕ' }]),
+      );
+      expect(() => normalizeDocument(parsed.rows[0]!)).toThrow(
+        ImportValidationError,
+      );
+    }
+    const parsed = await source.parse(await workbook([{ status: 'чернетка' }]));
+    expect(() => normalizeDocument(parsed.rows[0]!)).toThrow(
+      ImportValidationError,
+    );
   });
   it('handles numeric Excel serials in the 1900 and 1904 calendars', async () => {
     const standard = await source.parse(
@@ -239,6 +264,174 @@ describe('journal HTTP + SQLite', () => {
       },
     });
     expect(old.title).toBe('Оновлений зміст');
+  });
+  it('returns a complete Excel error report beyond the JSON preview and writes nothing', async () => {
+    const before = await client.import.count();
+    const documentsBefore = await client.document.count();
+    const response = await upload(
+      await workbook(
+        Array.from({ length: 105 }, (_, index) => ({
+          registrationNumber: `ERR-${index}`,
+          status: '=INVALID()',
+          receivedVia: null,
+        })),
+      ),
+    );
+    expect(response.status).toBe(422);
+    const body = importErrorResponseSchema.parse(await response.json());
+    expect(body.issues).toHaveLength(100);
+    expect(body.issueCount).toBe(105);
+    const report = new ExcelJS.Workbook();
+    await report.xlsx.load(Buffer.from(body.report!.base64, 'base64'));
+    const sheet = report.getWorksheet('Помилки імпорту')!;
+    expect(sheet.rowCount).toBe(106);
+    expect(sheet.getCell('A2').value).toBe(2);
+    expect(sheet.getCell('A106').value).toBe(106);
+    expect(sheet.getCell('B2').value).toBe('Стан документа');
+    expect(sheet.getCell('C2').value).toBe('=INVALID()');
+    expect(sheet.getCell('C2').type).toBe(ExcelJS.ValueType.String);
+    expect(sheet.getCell('D2').text).toContain('дозволеному переліку');
+    expect(sheet.getCell('E2').value).toBe('Чернетка');
+    expect(await client.import.count()).toBe(before);
+    expect(await client.document.count()).toBe(documentsBefore);
+  });
+  it('edits full documents with version checks, history, stable no-op dates and unique keys', async () => {
+    await upload(
+      await workbook([
+        { registrationNumber: 'EDIT-1' },
+        { registrationNumber: 'EDIT-2' },
+      ]),
+    );
+    const headers = {
+      Authorization: 'Bearer test-session',
+      'Content-Type': 'application/json',
+    };
+    const listResponse = await fetch(
+      `${api.url}/api/documents?search=EDIT-&sortBy=registrationNumber&sortDirection=asc`,
+      { headers },
+    );
+    const list = documentsSchema.parse(await listResponse.json());
+    expect(list.items).toHaveLength(2);
+    const original = list.items[0]!;
+    expect(Object.keys(original)).toHaveLength(46);
+    const columnsResponse = await fetch(`${api.url}/api/documents/columns`, {
+      headers,
+    });
+    expect(await columnsResponse.json()).toHaveLength(43);
+    const patch = (version: number, field: string, value: string) =>
+      fetch(`${api.url}/api/documents/${original.id}`, {
+        method: 'PATCH',
+        headers,
+        body: JSON.stringify({ version, field, value }),
+      });
+    expect((await patch(original.version, 'status', 'Unknown')).status).toBe(
+      409,
+    );
+    expect(
+      (await patch(original.version, 'registrationNumber', 'EDIT-2')).status,
+    ).toBe(409);
+    const response = await patch(
+      original.version,
+      'title',
+      'Ручне виправлення',
+    );
+    expect(response.status).toBe(200);
+    const edited = documentSchema.parse(await response.json());
+    expect(edited.version).toBe(original.version + 1);
+    expect(edited.createdAt).toBe(original.createdAt);
+    expect(edited.updatedAt >= original.updatedAt).toBe(true);
+    expect(
+      (await patch(original.version, 'title', 'Застаріла зміна')).status,
+    ).toBe(409);
+    const unchanged = documentSchema.parse(
+      await (await patch(edited.version, 'title', edited.title)).json(),
+    );
+    expect(unchanged.updatedAt).toBe(edited.updatedAt);
+    expect(unchanged.version).toBe(edited.version);
+    const historyResponse = await fetch(
+      `${api.url}/api/documents/${original.id}/history`,
+      { headers },
+    );
+    const history = documentHistorySchema.parse(await historyResponse.json());
+    expect(history.find((item) => item.source === 'manual')).toMatchObject({
+      before: { title: 'Тестовий документ' },
+      after: { title: 'Ручне виправлення' },
+    });
+    await upload(
+      await workbook([{ registrationNumber: 'EDIT-1', title: edited.title }]),
+    );
+    expect(
+      (
+        await client.document.findUniqueOrThrow({ where: { id: original.id } })
+      ).updatedAt.toISOString(),
+    ).toBe(edited.updatedAt);
+  });
+  it('soft deletes a selection atomically, retains history and refuses resurrection by import', async () => {
+    const headers = {
+      Authorization: 'Bearer test-session',
+      'Content-Type': 'application/json',
+    };
+    const rows = await client.document.findMany({
+      where: { registrationNumber: { startsWith: 'EDIT-' } },
+      orderBy: { registrationNumber: 'asc' },
+    });
+    const first = rows[0]!;
+    const second = rows[1]!;
+    const remove = (items: Array<{ id: string; version: number }>) =>
+      fetch(`${api.url}/api/documents/delete`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({ items }),
+      });
+    expect(
+      (
+        await remove([
+          { id: first.id, version: first.version },
+          { id: second.id, version: 999 },
+        ])
+      ).status,
+    ).toBe(409);
+    expect(
+      await client.document.count({
+        where: { id: { in: rows.map((row) => row.id) }, deletedAt: null },
+      }),
+    ).toBe(2);
+    expect(
+      (await remove(rows.map((row) => ({ id: row.id, version: row.version }))))
+        .status,
+    ).toBe(204);
+    const listed = documentsSchema.parse(
+      await (
+        await fetch(`${api.url}/api/documents?search=EDIT-`, { headers })
+      ).json(),
+    );
+    expect(listed.total).toBe(0);
+    expect(
+      await client.importRow.count({ where: { documentId: first.id } }),
+    ).toBeGreaterThan(0);
+    expect(
+      await client.documentChange.count({
+        where: { documentId: first.id, source: 'delete' },
+      }),
+    ).toBe(1);
+    const importsBefore = await client.import.count();
+    const response = await upload(
+      await workbook([
+        { registrationNumber: 'WILL-ROLLBACK' },
+        { registrationNumber: 'EDIT-1' },
+      ]),
+    );
+    expect(response.status).toBe(422);
+    expect(
+      await client.document.count({
+        where: { registrationNumber: 'WILL-ROLLBACK' },
+      }),
+    ).toBe(0);
+    expect(await client.import.count()).toBe(importsBefore);
+    expect(
+      (await client.document.findUniqueOrThrow({ where: { id: first.id } }))
+        .deletedAt,
+    ).not.toBeNull();
   });
   it('enforces authorization, filename and pagination validation', async () => {
     expect((await upload(await workbook([{}]), 'wrong')).status).toBe(401);

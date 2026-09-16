@@ -1,3 +1,4 @@
+import { downloadErrorReport } from '../../features/imports/download-error-report';
 import { useState } from 'react';
 import { useIsMutating, useQuery } from '@tanstack/react-query';
 import {
@@ -78,6 +79,23 @@ export default function ImportsPage() {
           {error && (
             <Alert color="red" role="alert" title="Імпорт не завершено">
               {error.message}
+              {error instanceof ApiError && error.report && (
+                <Button
+                  mt="sm"
+                  variant="light"
+                  color="red"
+                  onClick={() => downloadErrorReport(error.report!)}
+                >
+                  Завантажити помилки Excel ({error.issueCount})
+                </Button>
+              )}
+              {error instanceof ApiError &&
+                error.issueCount > error.issues.length && (
+                  <Text size="sm">
+                    Показано перші {error.issues.length} помилок. Повний список
+                    — у файлі Excel.
+                  </Text>
+                )}
               {error instanceof ApiError && error.issues.length > 0 && (
                 <ul>
                   {error.issues.map((issue, i) => (

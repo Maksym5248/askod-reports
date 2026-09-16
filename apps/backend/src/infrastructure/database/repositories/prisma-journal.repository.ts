@@ -1,3 +1,10 @@
+import {
+  DocumentConflict,
+  DocumentNotFound,
+} from '../../../domain/documents/document-conflict';
+import { ImportValidationError } from '../../../domain/imports/import-validation-error';
+import { documentFieldTypes } from '../../../domain/documents/document-fields';
+import type { Prisma } from '@prisma/client';
 import { createHash } from 'node:crypto';
 import type { PrismaClient, Import as PrismaImport } from '@prisma/client';
 import type {
@@ -50,6 +57,16 @@ export function createPrismaJournalRepository(
                 },
               },
             });
+            if (existing?.deletedAt)
+              throw new ImportValidationError([
+                {
+                  row: record.source.rowNumber,
+                  field: 'registrationNumber',
+                  value: record.document.registrationNumber,
+                  message:
+                    'Документ видалено з робочого списку. Імпорт не відновлює його автоматично; зверніться до адміністратора.',
+                },
+              ]);
             const outcome = !existing
               ? 'created'
               : existing.contentHash === contentHash
@@ -63,7 +80,14 @@ export function createPrismaJournalRepository(
             const document = !existing
               ? await tx.document.create({ data })
               : outcome === 'updated'
-                ? await tx.document.update({ where: { id: existing.id }, data })
+                ? await tx.document.update({
+                    where: { id: existing.id },
+                    data: {
+                      ...data,
+                      updatedAt: new Date(),
+                      version: { increment: 1 },
+                    },
+                  })
                 : existing;
             counts[outcome]++;
             await tx.importRow.create({
@@ -92,14 +116,161 @@ export function createPrismaJournalRepository(
         })
       ).map(summary);
     },
-    async list({ page, pageSize }) {
+    async find(id) {
+      const row = await client.document.findFirst({
+        where: { id, deletedAt: null },
+      });
+      return row ? toDomain(row) : null;
+    },
+    async update(id, version, document) {
+      try {
+        return await client.$transaction(async (tx) => {
+          const current = await tx.document.findFirst({
+            where: { id, deletedAt: null },
+          });
+          if (!current) throw new DocumentNotFound('Документ не знайдено.');
+          if (current.version !== version)
+            throw new DocumentConflict(
+              'Документ уже змінено. Оновіть таблицю.',
+            );
+          const contentHash = createHash('sha256')
+            .update(JSON.stringify(document))
+            .digest('hex');
+          if (current.contentHash === contentHash) return toDomain(current);
+          const result = await tx.document.updateMany({
+            where: { id, version, deletedAt: null },
+            data: {
+              ...toPersistence(document),
+              contentHash,
+              updatedAt: new Date(),
+              version: { increment: 1 },
+            },
+          });
+          if (result.count !== 1)
+            throw new DocumentConflict(
+              'Документ уже змінено. Оновіть таблицю.',
+            );
+          const updated = await tx.document.findUniqueOrThrow({
+            where: { id },
+          });
+          await tx.documentChange.create({
+            data: {
+              documentId: id,
+              source: 'manual',
+              before: { ...toDomain(current) },
+              after: { ...toDomain(updated) },
+            },
+          });
+          return toDomain(updated);
+        });
+      } catch (error) {
+        if (
+          error &&
+          typeof error === 'object' &&
+          'code' in error &&
+          error.code === 'P2002'
+        )
+          throw new DocumentConflict(
+            'Документ з таким номером і роком уже існує.',
+          );
+        throw error;
+      }
+    },
+    async deleteMany(items) {
+      await client.$transaction(async (tx) => {
+        for (const item of items) {
+          const current = await tx.document.findFirst({
+            where: { id: item.id, deletedAt: null },
+          });
+          if (!current || current.version !== item.version)
+            throw new DocumentConflict(
+              'Один із документів уже змінено або видалено. Оновіть таблицю; нічого не видалено.',
+            );
+          const deletedAt = new Date();
+          const result = await tx.document.updateMany({
+            where: { id: item.id, version: item.version, deletedAt: null },
+            data: {
+              deletedAt,
+              updatedAt: deletedAt,
+              version: { increment: 1 },
+            },
+          });
+          if (result.count !== 1)
+            throw new DocumentConflict(
+              'Документ уже змінено. Нічого не видалено.',
+            );
+          await tx.documentChange.create({
+            data: {
+              documentId: item.id,
+              source: 'delete',
+              before: { ...toDomain(current) },
+              after: { deletedAt: deletedAt.toISOString() },
+            },
+          });
+        }
+      });
+    },
+    async history(id) {
+      const [changes, imports] = await Promise.all([
+        client.documentChange.findMany({
+          where: { documentId: id },
+          orderBy: { changedAt: 'desc' },
+        }),
+        client.importRow.findMany({
+          where: { documentId: id },
+          include: { import: true },
+        }),
+      ]);
+      return [
+        ...changes.map((row) => ({
+          id: row.id,
+          changedAt: row.changedAt.toISOString(),
+          source: row.source,
+          before: row.before,
+          after: row.after,
+        })),
+        ...imports.map((row) => ({
+          id: row.id,
+          changedAt: row.import.importedAt.toISOString(),
+          source: `import:${row.outcome}`,
+          before: null,
+          after: row.snapshot,
+        })),
+      ].sort((a, b) => b.changedAt.localeCompare(a.changedAt));
+    },
+    async list({
+      page,
+      pageSize,
+      search,
+      documentType,
+      sortBy,
+      sortDirection,
+    }) {
+      const where: Prisma.DocumentWhereInput = {
+        deletedAt: null,
+        ...(documentType ? { documentType } : {}),
+        ...(search
+          ? {
+              OR: ['registrationNumber', 'title', 'applicant'].map((field) => ({
+                [field]: { contains: search },
+              })),
+            }
+          : {}),
+      };
+      const field =
+        sortBy &&
+        (Object.hasOwn(documentFieldTypes, sortBy) ||
+          ['createdAt', 'updatedAt'].includes(sortBy))
+          ? sortBy
+          : 'registeredAt';
       const [total, items] = await client.$transaction([
-        client.document.count(),
+        client.document.count({ where }),
         client.document.findMany({
+          where,
           skip: (page - 1) * pageSize,
           take: pageSize,
           orderBy: [
-            { registeredAt: 'desc' },
+            { [field]: sortDirection === 'asc' ? 'asc' : 'desc' },
             { registrationNumber: 'asc' },
             { id: 'asc' },
           ],

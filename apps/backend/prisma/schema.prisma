@@ -14,6 +14,11 @@ model Document {
   title              String
   registeredAt       DateTime
 
+  createdAt              DateTime         @default(now())
+  updatedAt              DateTime         @default(now())
+  deletedAt              DateTime?
+  version                Int              @default(1)
+  changes                DocumentChange[]
   contentHash            String?
   imports                ImportRow[]
   pageCount              Int?
@@ -90,4 +95,16 @@ model ImportRow {
 
   @@unique([importId, rowNumber])
   @@index([documentId])
+}
+
+model DocumentChange {
+  id         String   @id @default(uuid())
+  documentId String
+  changedAt  DateTime @default(now())
+  source     String
+  before     Json
+  after      Json
+  document   Document @relation(fields: [documentId], references: [id], onDelete: Restrict)
+
+  @@index([documentId, changedAt])
 }

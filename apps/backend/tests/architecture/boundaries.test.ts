@@ -113,6 +113,7 @@ it('shares only browser-safe contracts with the renderer', () => {
         '@mantine/notifications',
         '@mantine/notifications/styles.css',
         '@tanstack/react-query',
+        '@tanstack/react-table',
         'zustand',
         'zustand/middleware',
       ]),

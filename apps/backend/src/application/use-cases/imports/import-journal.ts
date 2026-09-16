@@ -32,7 +32,9 @@ export class ImportJournal {
           issues.push({
             row: row.rowNumber,
             field: 'registrationNumber',
-            message: 'Документ повторюється в цьому файлі',
+            message:
+              'Документ з таким номером і роком реєстрації повторюється в цьому файлі',
+            value: document.registrationNumber,
           });
         else {
           keys.add(identityKey);
@@ -43,7 +45,7 @@ export class ImportJournal {
         issues.push(...error.issues);
       }
     }
-    if (issues.length) throw new ImportValidationError(issues.slice(0, 100));
+    if (issues.length) throw new ImportValidationError(issues);
     return this.repository.save({
       fileName: input.fileName,
       fileHash: parsed.fileHash,

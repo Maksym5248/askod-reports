@@ -1,5 +1,6 @@
+import { readDocumentEnum } from '../../../domain/documents/document-enums';
 import type { Document as PrismaDocument } from '@prisma/client';
-import type { JournalDocument } from '../../../domain';
+import type { Document, JournalDocument } from '../../../domain';
 export function toPersistence(document: JournalDocument) {
   return {
     ...document,
@@ -19,11 +20,12 @@ export function toPersistence(document: JournalDocument) {
       : null,
   };
 }
-export function toDomain(
-  row: PrismaDocument,
-): JournalDocument & { id: string } {
+export function toDomain(row: PrismaDocument): Document {
   return {
     id: row.id,
+    createdAt: row.createdAt.toISOString(),
+    updatedAt: row.updatedAt.toISOString(),
+    version: row.version,
     registrationNumber: row.registrationNumber,
     registeredAt: row.registeredAt.toISOString().slice(0, 10),
     title: row.title,
@@ -39,26 +41,41 @@ export function toDomain(
     applicantCount: row.applicantCount,
     applicantAddress: row.applicantAddress,
     branch: row.branch,
-    documentType: row.documentType,
+    documentType:
+      row.documentType === null
+        ? null
+        : readDocumentEnum('documentType', row.documentType),
     nomenclature: row.nomenclature,
     control: row.control,
     chiefExecutor: row.chiefExecutor,
     controller: row.controller,
-    route: row.route,
-    status: row.status,
+    route: row.route === null ? null : readDocumentEnum('route', row.route),
+    status: row.status === null ? null : readDocumentEnum('status', row.status),
     cardAuthor: row.cardAuthor,
-    multiplicity: row.multiplicity,
-    applicantType: row.applicantType,
-    subjectType: row.subjectType,
+    multiplicity:
+      row.multiplicity === null
+        ? null
+        : readDocumentEnum('multiplicity', row.multiplicity),
+    applicantType:
+      row.applicantType === null
+        ? null
+        : readDocumentEnum('applicantType', row.applicantType),
+    subjectType:
+      row.subjectType === null
+        ? null
+        : readDocumentEnum('subjectType', row.subjectType),
     reviewer: row.reviewer,
     reviewResult: row.reviewResult,
     reviewResultText: row.reviewResultText,
     territoryCode: row.territoryCode,
     territory: row.territory,
-    receivedVia: row.receivedVia,
+    receivedVia:
+      row.receivedVia === null
+        ? null
+        : readDocumentEnum('receivedVia', row.receivedVia),
     executorDepartment: row.executorDepartment,
     registrationDepartment: row.registrationDepartment,
-    folder: row.folder ?? '',
+    folder: readDocumentEnum('folder', row.folder ?? ''),
     organization: row.organization ?? '',
     mobilePhone: row.mobilePhone,
     email: row.email,

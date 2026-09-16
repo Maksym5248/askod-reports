@@ -1,3 +1,4 @@
+import type { DocumentEnumValue } from './document-enums';
 export interface JournalDocument {
   readonly registrationNumber: string;
   readonly registeredAt: string;
@@ -14,26 +15,26 @@ export interface JournalDocument {
   readonly applicantCount: number | null;
   readonly applicantAddress: string | null;
   readonly branch: string | null;
-  readonly documentType: string | null;
+  readonly documentType: DocumentEnumValue<'documentType'> | null;
   readonly nomenclature: string | null;
   readonly control: string | null;
   readonly chiefExecutor: string | null;
   readonly controller: string | null;
-  readonly route: string | null;
-  readonly status: string | null;
+  readonly route: DocumentEnumValue<'route'> | null;
+  readonly status: DocumentEnumValue<'status'> | null;
   readonly cardAuthor: string | null;
-  readonly multiplicity: string | null;
-  readonly applicantType: string | null;
-  readonly subjectType: string | null;
+  readonly multiplicity: DocumentEnumValue<'multiplicity'> | null;
+  readonly applicantType: DocumentEnumValue<'applicantType'> | null;
+  readonly subjectType: DocumentEnumValue<'subjectType'> | null;
   readonly reviewer: string | null;
   readonly reviewResult: string | null;
   readonly reviewResultText: string | null;
   readonly territoryCode: string | null;
   readonly territory: string | null;
-  readonly receivedVia: string | null;
+  readonly receivedVia: DocumentEnumValue<'receivedVia'> | null;
   readonly executorDepartment: string | null;
   readonly registrationDepartment: string | null;
-  readonly folder: string;
+  readonly folder: DocumentEnumValue<'folder'>;
   readonly organization: string;
   readonly mobilePhone: string | null;
   readonly email: string | null;
@@ -45,4 +46,7 @@ export interface JournalDocument {
 
 export interface Document extends JournalDocument {
   readonly id: string;
+  readonly createdAt: string;
+  readonly updatedAt: string;
+  readonly version: number;
 }

@@ -17,9 +17,14 @@ export function createApp(
   app.disable('x-powered-by');
   app.use(accessControl(options));
   app.use('/api/workspace', workspaceRoutes(dependencies.getWorkspaceStatus));
-  app.use('/api/documents', documentsRoutes(dependencies.listDocuments));
+  app.use('/api/documents', documentsRoutes(dependencies));
   app.use('/api/imports', importsRoutes(dependencies));
   app.use(notFound);
-  app.use(errorHandler(dependencies.importFieldLabel));
+  app.use(
+    errorHandler(
+      dependencies.importFieldLabel,
+      dependencies.generateImportErrorReport,
+    ),
+  );
   return app;
 }
