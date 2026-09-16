@@ -103,7 +103,19 @@ it('shares only browser-safe contracts with the renderer', () => {
   for (const [directory, external] of [
     [
       'apps/desktop/renderer/src',
-      new Set(['react', 'react-dom/client', '@askod/shared']),
+      new Set([
+        'react',
+        'react-dom/client',
+        '@askod/shared',
+        'react-router-dom',
+        '@mantine/core',
+        '@mantine/core/styles.css',
+        '@mantine/notifications',
+        '@mantine/notifications/styles.css',
+        '@tanstack/react-query',
+        'zustand',
+        'zustand/middleware',
+      ]),
     ],
     ['packages/shared/src', new Set(['zod'])],
   ] as const) {

@@ -79,6 +79,15 @@ ExcelJS-парсинг також виконується в основному �
 Renderer вибирає файл через браузерний input і передає його байти HTTP-запитом.
 Доступ до файлової системи, Prisma та Electron internals йому не надається.
 
+### Renderer SPA
+
+Renderer використовує React Router (HashRouter), Mantine, TanStack Query і Zustand.
+`app` збирає providers, router та layout; `pages` компонують екрани; `features`
+містять HTTP-функції, queries й mutations. Серверні дані належать Query cache,
+пагінація — URL, глобальні UI preferences — Zustand, вибраний файл — стану сторінки.
+Імпорт не повторюється автоматично; після успіху queries оновлюються.
+Детальна структура та правила: [Desktop README](../apps/desktop/README.md).
+
 ### Standalone-режим
 
 `main.ts` запускає Express в окремому Node-процесі. Electron для цього не потрібен.
