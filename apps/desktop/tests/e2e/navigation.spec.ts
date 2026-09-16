@@ -30,7 +30,7 @@ test('shows 404 for an unknown route and returns to documents', async ({
   ).toBeVisible();
   await window.getByRole('link', { name: 'До документів' }).click();
   await expect(
-    window.getByRole('heading', { name: 'Документи', exact: true }),
+    window.getByRole('heading', { name: 'Вхідні документи', exact: true }),
   ).toBeVisible();
 });
 test('paginates real documents and retains page 2 after reload', async ({
@@ -55,4 +55,40 @@ test('paginates real documents and retains page 2 after reload', async ({
   await expect(
     window.getByRole('button', { name: 'Далі', exact: true }),
   ).toBeDisabled();
+});
+
+test('applies popover filters explicitly and keeps search when filters are reset', async ({
+  desktop: { window, api },
+}) => {
+  await seed(api, [
+    { title: 'Спільний текст', documentType: 'Скарга' },
+    { title: 'Спільний текст', documentType: 'Заява (клопотання)' },
+  ]);
+  await openDocuments(window, 2);
+  await expect(
+    window.getByRole('button', { name: 'Видалити вибрані', exact: true }),
+  ).not.toBeVisible();
+  await expect(window.getByText('Робочий простір готовий')).not.toBeVisible();
+  const search = window.getByRole('textbox', {
+    name: 'Пошук за номером, змістом або заявником',
+  });
+  await search.fill('Спільний');
+  await search.press('Enter');
+  await expect(window).toHaveURL(/search=/);
+  await window.getByRole('button', { name: 'Фільтри', exact: true }).click();
+  await window
+    .getByRole('combobox', { name: 'Вид документа', exact: true })
+    .click();
+  await window.getByRole('option', { name: 'Скарга', exact: true }).click();
+  expect(window.url()).not.toContain('documentType=');
+  await window
+    .getByRole('button', { name: 'Застосувати', exact: true })
+    .click();
+  await expect(window.getByLabel('Діапазон документів')).toHaveText('1–1 з 1');
+  await window
+    .getByRole('button', { name: 'Фільтри · 1', exact: true })
+    .click();
+  await window.getByRole('button', { name: 'Скинути', exact: true }).click();
+  await expect(window.getByLabel('Діапазон документів')).toHaveText('1–2 з 2');
+  await expect(search).toHaveValue('Спільний');
 });

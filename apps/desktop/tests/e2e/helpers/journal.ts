@@ -30,13 +30,11 @@ export async function uploadInUi(
   name = 'journal.xlsx',
 ) {
   await window.getByRole('link', { name: 'Імпорти', exact: true }).click();
-  await window
-    .locator('input[type=file]')
-    .setInputFiles({
-      name,
-      mimeType: 'application/octet-stream',
-      buffer: await journal(rows),
-    });
+  await window.locator('input[type=file]').setInputFiles({
+    name,
+    mimeType: 'application/octet-stream',
+    buffer: await journal(rows),
+  });
   await window
     .getByRole('button', { name: 'Імпортувати в базу', exact: true })
     .click();
@@ -55,9 +53,11 @@ export async function documents(api: APIRequestContext) {
   return documentsSchema.parse(await response.json());
 }
 export async function openDocuments(window: Page, count: number) {
-  await window.getByRole('link', { name: 'Документи', exact: true }).click();
+  await window
+    .getByRole('link', { name: 'Вхідні документи', exact: true })
+    .click();
   await window.getByRole('button', { name: 'Оновити', exact: true }).click();
-  await expect(
-    window.getByText(`Документів у сховищі: ${count}.`, { exact: true }),
-  ).toBeVisible();
+  await expect(window.getByLabel('Діапазон документів')).toHaveText(
+    count === 0 ? '0 документів' : `1–${Math.min(25, count)} з ${count}`,
+  );
 }

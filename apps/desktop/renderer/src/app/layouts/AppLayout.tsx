@@ -37,7 +37,7 @@ export function AppLayout() {
         <nav aria-label="Головна навігація">
           <Stack gap="xs">
             {[
-              ['/documents', 'Документи'],
+              ['/documents', 'Вхідні документи'],
               ['/imports', 'Імпорти'],
               ['/settings', 'Налаштування'],
             ].map(([to, label]) => (

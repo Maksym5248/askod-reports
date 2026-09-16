@@ -31,7 +31,11 @@ export function DocumentsTable({
   sortBy,
   direction,
   onSort,
+  settings,
+  onSettingsClose,
 }: {
+  settings: boolean;
+  onSettingsClose: () => void;
   items: DocumentDto[];
   metadata: DocumentColumn[];
   page: number;
@@ -42,7 +46,6 @@ export function DocumentsTable({
   const prefs = useTablePreferences();
   const compact = usePreferences((s) => s.compact);
   const [selection, setSelection] = useState<Record<string, boolean>>({});
-  const [settings, setSettings] = useState(false);
   const [confirm, setConfirm] = useState(false);
   const [history, setHistory] = useState<string | null>(null);
   const client = useQueryClient();
@@ -174,13 +177,13 @@ export function DocumentsTable({
   }
   return (
     <Stack gap="sm" className={styles.workspace}>
-      <Group justify="space-between">
-        <Group>
+      {selected.length > 0 && (
+        <Group gap="sm" role="region" aria-label="Групові дії">
           <Text size="sm">Вибрано: {selected.length} (поточна сторінка)</Text>
           <Button
             color="red"
             variant="light"
-            disabled={!selected.length || deletion.isPending}
+            disabled={deletion.isPending}
             onClick={() => {
               deletion.reset();
               setConfirm(true);
@@ -188,11 +191,15 @@ export function DocumentsTable({
           >
             Видалити вибрані
           </Button>
+          <Button
+            variant="subtle"
+            disabled={deletion.isPending}
+            onClick={() => setSelection({})}
+          >
+            Скасувати вибір
+          </Button>
         </Group>
-        <Button variant="default" onClick={() => setSettings(true)}>
-          Колонки
-        </Button>
-      </Group>
+      )}
       <div
         className={styles.viewport}
         role="region"
@@ -269,7 +276,7 @@ export function DocumentsTable({
       </div>
       <Modal
         opened={settings}
-        onClose={() => setSettings(false)}
+        onClose={onSettingsClose}
         title="Налаштування колонок"
         size="lg"
       >

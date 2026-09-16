@@ -40,6 +40,10 @@ export default function ImportsPage() {
   }
   return (
     <Stack gap="lg">
+      <Alert color="yellow">
+        Новий імпорт може перезаписати ручні виправлення документів. Попередні
+        значення залишаться в історії.
+      </Alert>
       <Title order={1}>Імпорти</Title>
       <Text c="dimmed">
         Завантаження журналів та історія останніх 20 успішних імпортів.

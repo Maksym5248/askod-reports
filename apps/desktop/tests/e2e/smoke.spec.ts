@@ -4,7 +4,7 @@ test('launches the workspace, reaches the backend and isolates Node APIs @smoke'
 }) => {
   await expect(window).toHaveTitle('ASKOD Звіти');
   await expect(
-    window.getByRole('heading', { name: 'Робочий простір готовий' }),
+    window.getByRole('region', { name: 'Таблиця документів' }),
   ).toBeVisible();
   expect(await (await api.get('/api/workspace')).json()).toEqual({
     documentCount: 0,

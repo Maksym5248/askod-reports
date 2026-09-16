@@ -23,9 +23,7 @@ test('cancels deletion, then deletes selected rows while retaining history and r
   await window
     .getByRole('button', { name: 'Підтвердити видалення', exact: true })
     .click();
-  await expect(
-    window.getByText('Документів у сховищі: 0.', { exact: true }),
-  ).toBeVisible();
+  await expect(window.getByText('0 документів', { exact: true })).toBeVisible();
   expect(
     await (await api.get(`/api/documents/${original.id}/history`)).json(),
   ).toEqual(
@@ -65,9 +63,9 @@ test('selection is limited to the current page and clears on pagination', async 
     window.getByRole('button', { name: 'Сторінка 2', exact: true }),
   ).toHaveAttribute('aria-current', 'page');
   await expect(
-    window.getByText('Вибрано: 0 (поточна сторінка)', { exact: true }),
-  ).toBeVisible();
+    window.getByRole('region', { name: 'Групові дії' }),
+  ).not.toBeVisible();
   await expect(
     window.getByRole('button', { name: 'Видалити вибрані', exact: true }),
-  ).toBeDisabled();
+  ).not.toBeVisible();
 });
