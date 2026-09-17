@@ -2,6 +2,7 @@ node_modules/
 **/out/
 **/dist/
 .data/
+release/
 *.db
 *.db-journal
 .env

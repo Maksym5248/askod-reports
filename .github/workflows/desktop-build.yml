@@ -1,0 +1,54 @@
+name: Windows and Ubuntu distributions
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            target: windows
+            executable: release/windows/win-unpacked/ASKOD Reports.exe
+          - os: ubuntu-24.04
+            target: ubuntu
+            executable: release/ubuntu/linux-unpacked/askod-reports
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run build:${{ matrix.target }}
+      - name: Install Linux test dependencies
+        if: runner.os == 'Linux'
+        run: npx playwright install-deps chromium
+      - name: Verify packaged Windows application
+        if: runner.os == 'Windows'
+        run: npm run test:e2e -- smoke.spec.ts reports.spec.ts
+        env:
+          ASKOD_E2E_EXECUTABLE: ${{ github.workspace }}/${{ matrix.executable }}
+      - name: Verify packaged Linux application
+        if: runner.os == 'Linux'
+        run: xvfb-run -a npm run test:e2e -- smoke.spec.ts reports.spec.ts
+        env:
+          ASKOD_E2E_EXECUTABLE: ${{ github.workspace }}/${{ matrix.executable }}
+      - uses: actions/upload-artifact@v4
+        with:
+          name: askod-reports-${{ matrix.target }}-${{ runner.arch }}
+          path: |
+            release/${{ matrix.target }}/*.exe
+            release/${{ matrix.target }}/*.zip
+            release/${{ matrix.target }}/*.AppImage
+            release/${{ matrix.target }}/*.deb
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: packaging-diagnostics-${{ matrix.target }}
+          path: .data/e2e/
+          include-hidden-files: true

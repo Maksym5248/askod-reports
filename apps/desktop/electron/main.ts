@@ -45,12 +45,38 @@ else {
     .then(async () => {
       const directory = app.getPath('userData');
       await mkdir(directory, { recursive: true });
+      if (app.isPackaged) {
+        const engine =
+          process.platform === 'win32'
+            ? 'windows'
+            : process.platform === 'darwin'
+              ? process.arch === 'arm64'
+                ? 'darwin-arm64'
+                : 'darwin'
+              : 'debian-openssl-3.0.x';
+        // Signing changes engine checksums. Explicit paths prevent Prisma CLI
+        // from downloading replacements into the installed (signed) app.
+        process.env.PRISMA_SCHEMA_ENGINE_BINARY = resolve(
+          app.getAppPath(),
+          'node_modules/@prisma/engines',
+          `schema-engine-${engine}${process.platform === 'win32' ? '.exe' : ''}`,
+        );
+        process.env.PRISMA_QUERY_ENGINE_LIBRARY = resolve(
+          app.getAppPath(),
+          'node_modules/.prisma/client',
+          process.platform === 'win32'
+            ? 'query_engine-windows.dll.node'
+            : `libquery_engine-${engine}.${process.platform === 'darwin' ? 'dylib' : 'so'}.node`,
+        );
+      }
       api = await startBackend({
         databaseUrl: `file:${resolve(directory, 'askod.db')}`,
-        schemaPath: resolve(
-          app.getAppPath(),
-          '../../apps/backend/prisma/schema.prisma',
-        ),
+        schemaPath: app.isPackaged
+          ? resolve(app.getAppPath(), 'prisma/schema.prisma')
+          : resolve(
+              app.getAppPath(),
+              '../../apps/backend/prisma/schema.prisma',
+            ),
         token,
         allowedOrigin: devUrl ? new URL(devUrl).origin : 'null',
       });

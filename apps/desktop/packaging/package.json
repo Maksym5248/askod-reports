@@ -1,0 +1,18 @@
+{
+  "name": "askod-reports-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Desktop application for ASKOD imports and reports",
+  "author": "ASKOD Reports",
+  "license": "UNLICENSED",
+  "type": "module",
+  "main": "out/main/main.js",
+  "dependencies": {
+    "@prisma/client": "6.19.3",
+    "prisma": "6.19.3",
+    "express": "5.2.1",
+    "zod": "3.25.76",
+    "exceljs": "4.4.0",
+    "yauzl": "3.4.0"
+  }
+}

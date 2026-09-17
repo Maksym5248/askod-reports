@@ -1,0 +1,35 @@
+name: macOS distribution
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  package:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run build:mac
+      - name: Verify packaged macOS application
+        run: |
+          export ASKOD_E2E_EXECUTABLE="$(python3 -c 'from pathlib import Path; print(next(Path("release/mac").glob("*/ASKOD Reports.app/Contents/MacOS/ASKOD Reports")).resolve())')"
+          npm run test:e2e -- smoke.spec.ts reports.spec.ts
+          APP_BUNDLE="$(python3 -c 'from pathlib import Path; print(next(Path("release/mac").glob("*/ASKOD Reports.app")).resolve())')"
+          codesign --verify --deep --strict "$APP_BUNDLE"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: askod-reports-mac-${{ runner.arch }}
+          path: |
+            release/mac/*.dmg
+            release/mac/*.zip
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with:
+          name: packaging-diagnostics-mac
+          path: .data/e2e/
+          include-hidden-files: true

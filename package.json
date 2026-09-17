@@ -11,6 +11,9 @@
     "node": ">=24.15.0 <25"
   },
   "scripts": {
+    "build:windows": "npm run build && tsx scripts/package-desktop.ts windows",
+    "build:ubuntu": "npm run build && tsx scripts/package-desktop.ts ubuntu",
+    "build:mac": "npm run build && tsx scripts/package-desktop.ts mac",
     "dev": "npm run db:generate && npm run dev -w @askod/desktop",
     "dev:backend": "npm run db:generate && npm run dev -w @askod/backend",
     "build": "npm run db:generate && npm run typecheck && npm run build -w @askod/desktop && npm run build -w @askod/backend",
@@ -36,6 +39,7 @@
     "@types/yauzl": "^3.4.0",
     "@vitejs/plugin-react": "^5.2.0",
     "electron": "^44.3.0",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "playwright-core": "^1.63.0",
     "prettier": "^3.9.6",

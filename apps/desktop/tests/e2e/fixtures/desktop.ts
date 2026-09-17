@@ -36,8 +36,13 @@ export const test = base.extend<{ desktop: Desktop }>({
         ),
       ) as Record<string, string>;
       app = await electron.launch({
+        ...(process.env.ASKOD_E2E_EXECUTABLE
+          ? { executablePath: process.env.ASKOD_E2E_EXECUTABLE }
+          : {}),
         args: [
-          fileURLToPath(new URL('../../../', import.meta.url)),
+          ...(process.env.ASKOD_E2E_EXECUTABLE
+            ? []
+            : [fileURLToPath(new URL('../../../', import.meta.url))]),
           `--user-data-dir=${userData}`,
         ],
         env,
