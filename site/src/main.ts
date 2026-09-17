@@ -97,8 +97,8 @@ async function load() {
         ['-win-x64.zip', 'ZIP-архів'],
       ],
       ubuntu: [
-        ['-linux-x64.AppImage', 'Завантажити AppImage'],
-        ['-linux-x64.deb', 'DEB-пакет'],
+        ['-linux-x86_64.AppImage', 'Завантажити AppImage'],
+        ['-linux-amd64.deb', 'DEB-пакет'],
       ],
       mac: [
         ['-mac-arm64.dmg', 'DMG · Apple Silicon'],

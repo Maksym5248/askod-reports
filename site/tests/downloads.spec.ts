@@ -26,7 +26,8 @@ test('links to current assets and never substitutes old macOS builds', async ({
         ...release,
         assets: [
           asset('win-x64.exe'),
-          asset('linux-x64.deb'),
+          asset('linux-amd64.deb'),
+          asset('linux-x86_64.AppImage'),
           asset('mac-arm64.dmg', '0.1.0'),
         ],
       },
@@ -37,6 +38,16 @@ test('links to current assets and never substitutes old macOS builds', async ({
   await expect(
     page.getByRole('link', { name: 'Завантажити інсталятор' }),
   ).toHaveAttribute('href', asset('win-x64.exe').browser_download_url);
+  await expect(page.getByRole('link', { name: 'DEB-пакет' })).toHaveAttribute(
+    'href',
+    asset('linux-amd64.deb').browser_download_url,
+  );
+  await expect(
+    page.getByRole('link', { name: 'Завантажити AppImage' }),
+  ).toHaveAttribute(
+    'href',
+    asset('linux-x86_64.AppImage').browser_download_url,
+  );
   await expect(page.locator('#mac')).toContainText('ще не опубліковано');
   await expect(page.locator('#mac a')).toHaveCount(0);
 });
@@ -79,7 +90,7 @@ test('supports mobile layout with available builds', async ({ page }, info) => {
         ...release,
         assets: [
           asset('win-x64.exe'),
-          asset('linux-x64.AppImage'),
+          asset('linux-x86_64.AppImage'),
           asset('mac-arm64.dmg'),
         ],
       },

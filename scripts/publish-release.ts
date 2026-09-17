@@ -46,8 +46,8 @@ for (const name of names)
 if (
   !mode &&
   (!names.some((n) => n.endsWith('-win-x64.exe')) ||
-    !names.some((n) => n.endsWith('-linux-x64.AppImage')) ||
-    !names.some((n) => n.endsWith('-linux-x64.deb')))
+    !names.some((n) => n.endsWith('-linux-x86_64.AppImage')) ||
+    !names.some((n) => n.endsWith('-linux-amd64.deb')))
 )
   throw new Error(
     'Both Windows and Ubuntu packages are required before publishing',
