@@ -20,13 +20,62 @@ npm run build:mac
 - `release/mac/`: `.dmg` та ZIP із `.app` для поточної архітектури Mac.
 
 Windows можна пакувати з macOS; запуск потрібно перевіряти на Windows.
-Ubuntu-пакети збираються на Linux. У GitHub Actions є два незалежні ручні запуски:
+Ubuntu-пакети збираються на Linux. У GitHub Actions є два незалежні workflow:
 
-- **Windows and Ubuntu distributions** — Windows та Ubuntu.
+- **Windows and Ubuntu distributions** — Windows та Ubuntu; тег `v*` або ручний запуск.
 - **macOS distribution** — лише macOS, запускається окремо.
 
 Обидва workflow запускають smoke та експорт звітів із вже запакованого executable.
-Завантаження результатів — через Actions artifacts; автоматичної публікації немає.
+Без `release_tag` ручний запуск залишає результати лише в Actions artifacts.
+Push тега або ручний запуск із `release_tag` публікує файли в GitHub Releases.
+
+## Випуск версії та завантаження
+
+1. Оновити версію в усіх workspace package.json, runtime manifest і обох lockfile.
+2. Закомітити й надіслати зміни в GitHub.
+3. Створити тег цієї версії на відповідному коміті, наприклад:
+
+   ```sh
+   git tag v0.1.1
+   git push origin v0.1.1
+   ```
+
+4. Windows/Ubuntu workflow перевіряє відповідність версії тегу, збирає й тестує
+   обидва пакети. Після успіху всіх jobs створює draft release, завантажує файли
+   та SHA-256 і публікує реліз. На помилці завантаження реліз залишається draft.
+5. Для macOS вручну запустити **macOS distribution** з `release_tag: v0.1.1`.
+   Workflow збирає саме код тега й додає файли до вже опублікованого релізу.
+
+Публікація виконується автоматичним `GITHUB_TOKEN` з `contents: write` лише в
+publish job. Файли з однаковими назвами й різними контрольними сумами не
+перезаписуються: для зміненого білда потрібна нова версія. Immutable releases
+несумісні з відкладеним додаванням macOS. Релізи серіалізовані за тегом, тому
+паралельні workflows не завантажують файли одночасно.
+
+## GitHub Pages
+
+Сторінка завантажень: `https://maksym5248.github.io/askod-reports/`.
+Вихідний код — `site/`, локальний запуск — `npm run site:dev`, збірка —
+`npm run site:build`. Сайт не потребує бекенду й отримує список файлів останнього
+опублікованого stable release через публічний GitHub API. Релізів немає —
+показує очікування; збірки macOS немає — не створює вигаданого посилання.
+За помилки API залишається посилання на Releases. Старі macOS-файли не
+підставляються замість поточної версії.
+
+Одноразово ввімкнути **Settings → Pages → Build and deployment → Source:
+GitHub Actions**. Workflow **Download page** публікує сайт при зміні його файлів
+у `main` або вручну. Нові релізи й додані macOS-файли відображаються без
+перезбирання сайту. Токени й приватні дані на сторінку не потрапляють.
+
+`environment.name: github-pages` — стандартна назва середовища розгортання,
+а не змінна. Якщо редактор показує `Value 'github-pages' is not valid`,
+перевірте **Settings → Environments**: створіть середовище `github-pages`,
+якщо його немає, та оновіть дані розширення GitHub Actions / перезавантажте
+редактор. Не потрібно замінювати назву на expression або видаляти `environment`.
+Налаштування Pages виконується адміністратором репозиторію одноразово.
+
+`npm run site:test` перевіряє посилання, відсутні збірки, помилки API та
+мобільний вигляд (перед запуском: `npx playwright install chromium`).
 
 ## Склад пакета
 

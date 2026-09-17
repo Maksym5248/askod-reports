@@ -1,0 +1,249 @@
+:root {
+  font-family:
+    Inter,
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    sans-serif;
+  color: #172f2a;
+  background: #f5f8f6;
+  font-synthesis: none;
+  line-height: 1.6;
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+}
+a {
+  color: #0b7560;
+  text-underline-offset: 4px;
+}
+a:focus-visible {
+  outline: 3px solid #249d82;
+  outline-offset: 5px;
+}
+main,
+.navigation,
+footer {
+  max-width: 1120px;
+  margin: auto;
+  padding-inline: 28px;
+}
+.navigation {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 98px;
+  gap: 20px;
+}
+.navigation a {
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 600;
+}
+.navigation .brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  color: #172f2a;
+}
+.hero {
+  padding: 75px 0 65px;
+}
+.eyebrow {
+  font-size: 12px;
+  font-weight: 750;
+  letter-spacing: 2px;
+  color: #0b7560;
+}
+h1 {
+  font-size: clamp(36px, 5vw, 60px);
+  letter-spacing: -2.2px;
+  line-height: 1.12;
+  margin: 22px 0;
+}
+h2,
+h3 {
+  line-height: 1.3;
+}
+h2 {
+  font-size: 23px;
+  letter-spacing: -0.5px;
+}
+h3 {
+  font-size: 23px;
+  margin: 13px 0 6px;
+}
+.intro {
+  max-width: 620px;
+  font-size: 18px;
+  color: #586d66;
+}
+.release-line {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  margin-top: 25px;
+}
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #17846a;
+}
+.section-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+.section-heading span {
+  font-size: 13px;
+  color: #647870;
+}
+.platforms {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px;
+}
+.platform {
+  background: #fff;
+  border: 1px solid #dbe5de;
+  border-radius: 18px;
+  padding: 27px;
+  box-shadow: 0 4px 20px #163c2805;
+}
+.platform-icon {
+  font-size: 29px;
+  background: #eef7f1;
+  border-radius: 12px;
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  color: #0b7560;
+}
+.platform p {
+  color: #647870;
+  font-size: 14px;
+  margin: 0 0 25px;
+}
+.downloads {
+  font-size: 14px;
+  color: #647870;
+  min-height: 140px;
+}
+.download {
+  display: block;
+  background: #0b7560;
+  color: white;
+  border-radius: 8px;
+  padding: 11px 10px;
+  text-align: center;
+  text-decoration: none;
+  font-weight: 600;
+}
+.download:hover {
+  background: #085a49;
+}
+.download-row + .download-row {
+  margin-top: 14px;
+}
+.download-row + .download-row .download {
+  background: #f0f6f2;
+  color: #0b7560;
+}
+.file-info {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  padding-top: 5px;
+}
+.notice {
+  font-size: 12px;
+  color: #647870;
+  max-width: 850px;
+  margin-top: 20px;
+}
+.workflow {
+  margin-top: 70px;
+  padding: 35px 0 60px;
+  border-top: 1px solid #dbe5de;
+}
+.steps {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 40px;
+  margin-top: 30px;
+}
+.steps span {
+  font-size: 12px;
+  color: #0b7560;
+  font-weight: 700;
+}
+.steps h3 {
+  font-size: 19px;
+}
+.steps p {
+  font-size: 14px;
+  color: #647870;
+}
+footer {
+  border-top: 1px solid #dbe5de;
+  padding-block: 25px;
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  gap: 20px;
+}
+footer > div {
+  display: flex;
+  gap: 22px;
+}
+@media (max-width: 720px) {
+  .platforms,
+  .steps {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    padding-top: 40px;
+  }
+  .section-heading {
+    display: block;
+  }
+  .section-heading span {
+    display: block;
+    margin-bottom: 16px;
+  }
+  .downloads {
+    min-height: 0;
+  }
+  .platform {
+    padding: 24px;
+  }
+  .workflow {
+    margin-top: 40px;
+  }
+  .steps {
+    gap: 15px;
+  }
+  footer {
+    flex-direction: column;
+  }
+  h1 {
+    letter-spacing: -1px;
+  }
+  .navigation {
+    min-height: 80px;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  a {
+    transition: background-color 0.15s ease;
+  }
+}

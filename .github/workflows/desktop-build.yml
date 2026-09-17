@@ -1,6 +1,13 @@
 name: Windows and Ubuntu distributions
 on:
+  push:
+    tags: ['v*']
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing tag to publish (e.g. v0.1.1); leave empty for artifacts only'
+        type: string
+        required: false
 permissions:
   contents: read
 jobs:
@@ -18,10 +25,15 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: npm
+      - run: node scripts/verify-release.ts
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || (startsWith(github.ref, 'refs/tags/') && github.ref_name) || '' }}
       - run: npm ci
       - run: npm run build:${{ matrix.target }}
       - name: Install Linux test dependencies
@@ -52,3 +64,31 @@ jobs:
           name: packaging-diagnostics-${{ matrix.target }}
           path: .data/e2e/
           include-hidden-files: true
+  publish:
+    needs: package
+    if: startsWith(github.ref, 'refs/tags/v') || inputs.release_tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ inputs.release_tag || github.ref_name }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: askod-reports-*
+          merge-multiple: true
+          path: release-assets
+      - run: node scripts/verify-release.ts
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}
+      - run: node scripts/publish-release.ts release-assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag || github.ref_name }}

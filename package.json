@@ -1,7 +1,7 @@
 {
   "name": "askod-reports",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "workspaces": [
     "apps/*",
@@ -11,6 +11,9 @@
     "node": ">=24.15.0 <25"
   },
   "scripts": {
+    "site:dev": "vite --config site/vite.config.ts",
+    "site:build": "vite build --config site/vite.config.ts",
+    "site:test": "playwright test --config site/playwright.config.ts",
     "build:windows": "npm run build && tsx scripts/package-desktop.ts windows",
     "build:ubuntu": "npm run build && tsx scripts/package-desktop.ts ubuntu",
     "build:mac": "npm run build && tsx scripts/package-desktop.ts mac",

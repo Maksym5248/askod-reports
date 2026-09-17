@@ -14,5 +14,5 @@
     "types": ["node", "vite/client"],
     "noEmit": true
   },
-  "include": ["apps", "packages", "scripts"]
+  "include": ["apps", "packages", "scripts", "site"]
 }

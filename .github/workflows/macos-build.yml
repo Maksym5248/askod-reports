@@ -1,6 +1,11 @@
 name: macOS distribution
 on:
   workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Existing published release tag; leave empty for artifacts only'
+        type: string
+        required: false
 permissions:
   contents: read
 jobs:
@@ -8,10 +13,22 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag || github.ref }}
       - uses: actions/setup-node@v4
         with:
           node-version-file: .node-version
           cache: npm
+      - run: node scripts/verify-release.ts
+        env:
+          RELEASE_TAG: ${{ inputs.release_tag }}
+      - name: Check destination release before building
+        if: inputs.release_tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          test "$(gh release view "$RELEASE_TAG" --json isDraft --jq .isDraft)" = false
       - run: npm ci
       - run: npm run build:mac
       - name: Verify packaged macOS application
@@ -33,3 +50,29 @@ jobs:
           name: packaging-diagnostics-mac
           path: .data/e2e/
           include-hidden-files: true
+  publish:
+    needs: package
+    if: inputs.release_tag
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: release-${{ inputs.release_tag }}
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.release_tag }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .node-version
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: askod-reports-mac-*
+          merge-multiple: true
+          path: release-assets
+      - run: node scripts/publish-release.ts release-assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+          RELEASE_EXISTING_ONLY: 'true'
