@@ -3,6 +3,7 @@ export function testDependencies(
   overrides: Partial<BackendDependencies> = {},
 ): BackendDependencies {
   return {
+    generateReport: { execute: async () => new Uint8Array() },
     documentColumns: [],
     manageDocuments: {
       update: async () => {

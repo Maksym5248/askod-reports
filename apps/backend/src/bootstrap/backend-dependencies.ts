@@ -10,6 +10,7 @@ import type {
 
 // HTTP depends on callable use cases, never on database adapters.
 export interface BackendDependencies {
+  generateReport: Pick<GenerateReport, 'execute'>;
   manageDocuments: Pick<ManageDocuments, 'update' | 'deleteMany' | 'history'>;
   documentColumns: DocumentColumn[];
   getWorkspaceStatus: Pick<GetWorkspaceStatus, 'execute'>;
@@ -23,3 +24,4 @@ export interface BackendResources {
   dependencies: BackendDependencies;
   close(): Promise<void>;
 }
+import type { GenerateReport } from '../application/use-cases/reports/generate-report';

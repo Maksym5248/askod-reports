@@ -15,7 +15,7 @@
 ```sh
 npm run build                 # потрібна актуальна збірка Electron/backend/renderer
 npm run test:desktop          # тільки короткий smoke
-npm run test:e2e              # усі 17 E2E-сценаріїв, включно зі smoke
+npm run test:e2e              # усі 18 E2E-сценаріїв, включно зі smoke
 npm run test:e2e -- documents.spec.ts
 npm run test:e2e -- --grep "does not overwrite"
 npm run test:e2e:report       # HTML-звіт останнього запуску

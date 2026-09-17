@@ -1,4 +1,5 @@
 import { createPrismaJournalRepository } from './repositories/prisma-journal.repository';
+import { toDomain } from './mappers/document-mapper';
 import { PrismaClient } from '@prisma/client';
 import { execFile } from 'node:child_process';
 import { createRequire } from 'node:module';
@@ -39,6 +40,21 @@ export async function connectDatabase(databaseUrl: string, schemaPath: string) {
     count: () => client.document.count({ where: { deletedAt: null } }),
   };
   return {
+    reportDocuments: {
+      between: async (from: string, to: string) =>
+        (
+          await client.document.findMany({
+            where: {
+              deletedAt: null,
+              registeredAt: {
+                gte: new Date(`${from}T00:00:00.000Z`),
+                lte: new Date(`${to}T23:59:59.999Z`),
+              },
+            },
+            orderBy: [{ registeredAt: 'asc' }, { registrationNumber: 'asc' }],
+          })
+        ).map(toDomain),
+    },
     documents,
     journal: createPrismaJournalRepository(client),
     close: () => client.$disconnect(),

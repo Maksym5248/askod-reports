@@ -6,11 +6,14 @@
   "exports": "./src/index.ts",
   "dependencies": {
     "@askod/shared": "*",
-    "express": "^5.1.0",
-    "zod": "^3.24.0",
     "@prisma/client": "^6.19.0",
+    "@xmldom/xmldom": "^0.9.12",
     "exceljs": "^4.4.0",
-    "yauzl": "^3.4.0"
+    "express": "^5.1.0",
+    "jszip": "^3.10.2",
+    "xlsx": "https://cdn.sheetjs.com/xlsx-0.20.3/xlsx-0.20.3.tgz",
+    "yauzl": "^3.4.0",
+    "zod": "^3.24.0"
   },
   "scripts": {
     "dev": "tsx watch src/main.ts",

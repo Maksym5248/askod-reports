@@ -39,6 +39,7 @@ export function AppLayout() {
             {[
               ['/documents', 'Вхідні документи'],
               ['/imports', 'Імпорти'],
+              ['/reports', 'Звіти'],
               ['/settings', 'Налаштування'],
             ].map(([to, label]) => (
               <NavLink

@@ -1,0 +1,32 @@
+[
+  {
+    "file": "ДОДАТОК 1.xls",
+    "sha256": "e9b080a77263dd73d5294f7c8d9b0a91c791e4535c12fc4b5bf994ebd4004a6e",
+    "format": "xls"
+  },
+  {
+    "file": "ДОДАТОК 2.xls",
+    "sha256": "dcc3b600ce44dbfadd90ecc06534243f6e49991b0bee5637bf7164fa649d934a",
+    "format": "xls"
+  },
+  {
+    "file": "ДОДАТОК 3 .xls",
+    "sha256": "438ba0a7bd0fa37480a7ed1f9bb527c3cfa33c775b0d2c614791117791eb59df",
+    "format": "xls"
+  },
+  {
+    "file": "ДОДАТОК 4.xls",
+    "sha256": "19f9162ec954b607092c5a9ef0f12805cc639184ad69e9c0a147da89e26df209",
+    "format": "xls"
+  },
+  {
+    "file": "DOC Document.docx",
+    "sha256": "d7c98809769e86b46f93568aca8cf0d8c17ed7861cc04cc4d54b99dc39938647",
+    "format": "doc"
+  },
+  {
+    "file": "ЗПІ 2 КВАРТАЛ 2026Р..docx",
+    "sha256": "b7c403caf8b97c46837df8b17ac039d30d9361a3aeef1eb73f3db604e4f680d8",
+    "format": "doc"
+  }
+]

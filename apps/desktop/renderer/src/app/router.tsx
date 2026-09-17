@@ -3,6 +3,7 @@ import { HashRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { Text } from '@mantine/core';
 import { AppLayout } from './layouts/AppLayout';
 const DocumentsPage = lazy(() => import('../pages/documents/DocumentsPage'));
+const ReportsPage = lazy(() => import('../pages/reports/ReportsPage'));
 const ImportsPage = lazy(() => import('../pages/imports/ImportsPage'));
 const SettingsPage = lazy(() => import('../pages/settings/SettingsPage'));
 const NotFoundPage = lazy(() => import('../pages/not-found/NotFoundPage'));
@@ -21,6 +22,7 @@ export function AppRouter() {
             <Route index element={<Navigate to="/documents" replace />} />
             <Route path="documents" element={<DocumentsPage />} />
             <Route path="imports" element={<ImportsPage />} />
+            <Route path="reports" element={<ReportsPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />
           </Route>

@@ -4,3 +4,4 @@ export * from './contracts/documents';
 export * from './contracts/pagination';
 
 export * from './contracts/import-errors';
+export * from './contracts/reports';

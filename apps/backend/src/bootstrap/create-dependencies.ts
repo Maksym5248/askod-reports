@@ -32,6 +32,10 @@ export async function createDependencies(
   );
   return {
     dependencies: {
+      generateReport: new GenerateReport(
+        database.reportDocuments,
+        new TemplateReportWriter(),
+      ),
       manageDocuments: new ManageDocuments(database.journal),
       documentColumns: journalColumns.map((column) => ({
         ...column,
@@ -58,3 +62,5 @@ export async function createDependencies(
     close: () => database.close(),
   };
 }
+import { GenerateReport } from '../application/use-cases/reports/generate-report';
+import { TemplateReportWriter } from '../infrastructure/reports/template-report-writer';

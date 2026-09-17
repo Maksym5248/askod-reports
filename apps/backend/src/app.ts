@@ -19,6 +19,7 @@ export function createApp(
   app.use('/api/workspace', workspaceRoutes(dependencies.getWorkspaceStatus));
   app.use('/api/documents', documentsRoutes(dependencies));
   app.use('/api/imports', importsRoutes(dependencies));
+  app.use('/api/reports', reportsRoutes(dependencies));
   app.use(notFound);
   app.use(
     errorHandler(
@@ -28,3 +29,4 @@ export function createApp(
   );
   return app;
 }
+import { reportsRoutes } from './modules/reports/reports.routes';
